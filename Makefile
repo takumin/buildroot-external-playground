@@ -5,25 +5,39 @@ unexport LD_LIBRARY_PATH
 unexport LD_RUN_PATH
 unexport UNZIP
 
+BUILD_DIR    = /tmp/qemu-aarch64-virt
+EXTERNAL_DIR = $(CURDIR)/external
+
 .PHONY: default
-default: qemu-aarch64-virt
+default: clean build
 
-qemu-aarch64-virt: qemu-aarch64-virt-clean qemu-aarch64-virt-defconfig qemu-aarch64-virt-build
-
-qemu-aarch64-virt-defconfig:
-	@$(MAKE) -C buildroot O=/tmp/qemu-aarch64-virt BR2_EXTERNAL=../external qemu_aarch64_virt_playground_defconfig
-
-qemu-aarch64-virt-menuconfig:
-ifeq ("$(wildcard /tmp/qemu-aarch64-virt/.config)","")
-	@$(MAKE) -C buildroot O=/tmp/qemu-aarch64-virt BR2_EXTERNAL=../external qemu_aarch64_virt_playground_defconfig
+defconfig:
+ifeq ("$(wildcard $(BUILD_DIR)/.config)","")
+	@$(MAKE) -C buildroot O=$(BUILD_DIR) BR2_EXTERNAL=$(EXTERNAL_DIR) qemu_aarch64_virt_playground_defconfig
 endif
-	@$(MAKE) -C buildroot O=/tmp/qemu-aarch64-virt BR2_EXTERNAL=../external menuconfig
 
-qemu-aarch64-virt-clean:
-	@$(MAKE) -C buildroot O=/tmp/qemu-aarch64-virt BR2_EXTERNAL=../external clean
+menuconfig: defconfig
+	@$(MAKE) -C buildroot O=$(BUILD_DIR) BR2_EXTERNAL=$(EXTERNAL_DIR) menuconfig
 
-qemu-aarch64-virt-build:
-ifeq ("$(wildcard /tmp/qemu-aarch64-virt/.config)","")
-	@$(MAKE) -C buildroot O=/tmp/qemu-aarch64-virt BR2_EXTERNAL=../external qemu_aarch64_virt_playground_defconfig
+linux-menuconfig: defconfig
+	@$(MAKE) -C buildroot O=$(BUILD_DIR) BR2_EXTERNAL=$(EXTERNAL_DIR) linux-menuconfig
+
+busybox-menuconfig: defconfig
+	@$(MAKE) -C buildroot O=$(BUILD_DIR) BR2_EXTERNAL=$(EXTERNAL_DIR) busybox-menuconfig
+
+barebox-menuconfig: defconfig
+	@$(MAKE) -C buildroot O=$(BUILD_DIR) BR2_EXTERNAL=$(EXTERNAL_DIR) barebox-menuconfig
+
+uboot-menuconfig: defconfig
+	@$(MAKE) -C buildroot O=$(BUILD_DIR) BR2_EXTERNAL=$(EXTERNAL_DIR) uboot-menuconfig
+
+build: defconfig
+	@$(MAKE) -C buildroot O=$(BUILD_DIR) BR2_EXTERNAL=$(EXTERNAL_DIR)
+
+clean:
+ifneq ("$(wildcard $(BUILD_DIR)/.config)","")
+	@$(MAKE) -C buildroot O=$(BUILD_DIR) BR2_EXTERNAL=$(EXTERNAL_DIR) clean
 endif
-	@$(MAKE) -C buildroot O=/tmp/qemu-aarch64-virt BR2_EXTERNAL=../external
+
+distclean:
+	@rm -fr $(BUILD_DIR)
